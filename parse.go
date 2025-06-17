@@ -90,6 +90,7 @@ type parseConfig struct {
 	overflowWeekday   bool
 	overflowWeeks     bool
 	meridiem          string
+	is24HourFormat    bool
 	week              map[string]int
 	parsedArray       map[int]int
 	date              *Goment
@@ -136,7 +137,8 @@ func loadParseReplacements() {
 
 	addParseReplacement("X", handleTimestamp, regexps.MatchTimestamp)
 
-	addParseReplacement([]string{"h", "hh", "H", "HH"}, hourIdx, regexps.MatchOneToTwo)
+	addParseReplacement([]string{"h", "hh"}, handle12HourTime, regexps.MatchOneToTwo)
+	addParseReplacement([]string{"H", "HH"}, handle24HourTime, regexps.MatchOneToTwo)
 	addParseReplacement([]string{"k", "kk"}, handleOneToTwentyFourTime, regexps.MatchOneToTwo)
 	addParseReplacement([]string{"m", "mm"}, minuteIdx, regexps.MatchOneToTwo)
 	addParseReplacement([]string{"s", "ss"}, secondIdx, regexps.MatchOneToTwo)
@@ -558,7 +560,7 @@ func getDefaultWeekYear(token string, config *parseConfig, currWeek weekYear) in
 }
 
 func fixForMeridiem(config *parseConfig) {
-	if config.meridiem == "" {
+	if config.is24HourFormat || config.meridiem == "" {
 		return
 	}
 
@@ -657,6 +659,16 @@ func handleTimestamp(input string, config *parseConfig, locale locales.LocaleDet
 
 func handleOneToTwentyFourTime(input string, config *parseConfig, locale locales.LocaleDetails, token string) {
 	config.parsedArray[hourIdx] = parseNumber(input) - 1
+}
+
+func handle12HourTime(input string, config *parseConfig, locale locales.LocaleDetails, token string) {
+	config.parsedArray[hourIdx] = parseNumber(input)
+	// is24HourFormat will remain default false, which is correct
+}
+
+func handle24HourTime(input string, config *parseConfig, locale locales.LocaleDetails, token string) {
+	config.parsedArray[hourIdx] = parseNumber(input)
+	config.is24HourFormat = true
 }
 
 func handleMeridiem(input string, config *parseConfig, locale locales.LocaleDetails, token string) {
